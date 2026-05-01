@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Saldos Sugey"/>
+<meta name="theme-color" content="#0a0f1e"/>
+<link rel="manifest" href="data:application/json,{%22name%22:%22Saldos%20Sugey%22,%22short_name%22:%22Sugey%22,%22start_url%22:%22/%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0f1e%22,%22theme_color%22:%22%230a0f1e%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/869/869869.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}"/>
+<title>Saldos Sugey</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0f1e;--surface:#111827;--border:#1e2d45;--text:#f1f5f9;--muted:#64748b;--dim:#334155;--blue:#3b82f6;--green:#22c55e;--cyan:#06b6d4;--yellow:#f59e0b;--red:#ef4444;--purple:#a855f7}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:500px;margin:0 auto}
+h1,h2{font-family:'Syne',sans-serif}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;z-index:200}
+.login-logo{font-size:60px;margin-bottom:16px}
+.login-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);text-align:center;margin-bottom:6px}
+.login-sub{color:var(--muted);font-size:14px;text-align:center;margin-bottom:40px}
+.google-btn{display:flex;align-items:center;gap:12px;background:#fff;color:#1a1a1a;border:none;border-radius:14px;padding:14px 24px;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:300px;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.google-btn:active{opacity:.85}
+.google-btn img{width:22px;height:22px}
+
+/* WAITING APPROVAL */
+#waiting-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;z-index:200;text-align:center}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:100}
+#loader .spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* APP */
+#app{display:flex;flex-direction:column;min-height:100vh;display:none}
+#header{background:linear-gradient(135deg,#0d1f3c,#0a0f1e);padding:13px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
+#header-left h1{font-size:16px;letter-spacing:-0.5px;color:var(--text)}
+#header-left p{font-size:10px;color:#60a5fa;margin-top:1px}
+#header-right{display:flex;align-items:center;gap:8px}
+.user-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px}
+.badge-admin{background:#7c3aed;color:#e9d5ff}
+.badge-emp{background:#1d4ed8;color:#bfdbfe}
+.logout-btn{background:none;border:1px solid var(--dim);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer}
+
+#content{flex:1;overflow-y:auto;padding:14px 14px 90px}
+#nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:20}
+.nav-btn{flex:1;border:none;background:none;cursor:pointer;padding:7px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-btn span{font-size:18px}
+.nav-btn label{font-size:9px;font-weight:700;letter-spacing:0.4px;color:var(--muted);cursor:pointer;text-transform:uppercase}
+.nav-btn.active label{color:var(--cyan)}
+.nav-dot{width:16px;height:2px;background:var(--cyan);border-radius:2px}
+
+/* CARDS / FORMS */
+.card{background:var(--surface);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--dim);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;appearance:none;-webkit-appearance:none}
+.field input:focus,.field select:focus{border-color:var(--blue)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:opacity .15s}
+.btn:active{opacity:.8}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-green{background:#16a34a;color:#fff}
+.btn-gray{background:var(--dim);color:var(--text)}
+.btn-purple{background:#7c3aed;color:#fff}
+.btn-red{background:#dc2626;color:#fff}
+
+/* BADGES */
+.badge{display:inline-block;border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.badge-1{background:#1d4ed8;color:#bfdbfe}
+.badge-2{background:#166534;color:#bbf7d0}
+
+/* TOAST */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid var(--dim);color:var(--text);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.hidden{opacity:0}
+
+/* ITEMS */
+.item{background:var(--surface);border:1px solid var(--border);border-radius:11px;margin-bottom:7px;overflow:hidden}
+.item-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;gap:8px}
+.item-info{flex:1;min-width:0}
+.item-name{font-weight:700;font-size:14px;color:var(--text)}
+.item-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.item-meta{font-size:10px;color:var(--dim);margin-top:2px}
+.item-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.price-cyan{font-weight:800;font-size:15px;color:var(--cyan)}
+.price-green{font-weight:800;font-size:15px;color:var(--green)}
+.price-purple{font-weight:800;font-size:15px;color:#c084fc}
+.del-btn{background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:6px 11px;font-size:13px;font-weight:700;cursor:pointer;min-width:36px;min-height:34px;touch-action:manipulation}
+.ok-btn{background:#14532d;color:#86efac;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px;touch-action:manipulation}
+.confirm-row{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;gap:8px;background:#1c1208}
+.confirm-row span{color:var(--yellow);font-size:13px;font-weight:600;flex:1}
+.confirm-btns{display:flex;gap:8px;flex-shrink:0}
+.confirm-btns button{border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-no{background:var(--dim);color:#94a3b8}
+.btn-yes{background:#dc2626;color:#fff}
+
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{border-radius:12px;padding:13px 14px;text-align:center}
+.s-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px}
+.s-val{font-family:'Syne',sans-serif;font-weight:800;font-size:19px}
+.grand-total{background:linear-gradient(135deg,#0284c7,#0c4a6e);border-radius:14px;padding:18px 20px;text-align:center;margin-bottom:12px}
+.g-label{font-size:10px;font-weight:700;color:#bae6fd;text-transform:uppercase;letter-spacing:1px}
+.g-val{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#fff;margin-top:4px}
+
+/* FILTER BOX */
+.filter-box{background:var(--bg);border:1px solid var(--dim);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.filter-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
+.date-input,.select-input,.search-input{background:var(--bg);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;width:100%;outline:none;font-family:'DM Sans',sans-serif;appearance:none;-webkit-appearance:none}
+
+/* APARTADOS */
+.status-pendiente{background:#422006;color:#fb923c;border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700}
+.status-entregado{background:#14532d;color:#86efac;border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700}
+
+/* TOTALS */
+.totals-row{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid var(--border);margin-top:4px;font-weight:700;font-size:14px;color:var(--muted)}
+.cli-header{width:100%;background:none;border:none;cursor:pointer;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.cli-body{background:var(--bg);border-top:1px solid var(--border);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.cli-total{display:flex;justify-content:space-between;padding-top:7px;border-top:1px solid var(--border)}
+
+/* USERS TABLE */
+.user-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+.user-row:last-child{border-bottom:none}
+.online-dot{width:7px;height:7px;background:var(--green);border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:20px 0}
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:var(--muted);margin-bottom:6px;margin-top:4px}
+select option{background:#111827}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader"><div class="spin"></div><p style="color:#64748b;font-size:13px">Cargando...</p></div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none">
+  <div class="login-logo">🛍️</div>
+  <div class="login-title">Saldos Sugey</div>
+  <p class="login-sub">Inicia sesión para continuar</p>
+  <button class="google-btn" onclick="loginGoogle()">
+    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+    Continuar con Google
+  </button>
+  <p id="login-error" style="color:#ef4444;font-size:12px;margin-top:16px;text-align:center"></p>
+</div>
+
+<!-- WAITING -->
+<div id="waiting-screen" style="display:none">
+  <div style="font-size:50px;margin-bottom:16px">⏳</div>
+  <h2 style="font-family:Syne,sans-serif;font-size:20px;margin-bottom:8px">Acceso pendiente</h2>
+  <p style="color:var(--muted);font-size:13px;max-width:280px">Tu cuenta fue registrada. Pide al <strong style="color:var(--text)">administrador</strong> que te asigne un rol para entrar.</p>
+  <button onclick="signOut()" style="margin-top:24px;background:none;border:1px solid var(--dim);color:var(--muted);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">Cerrar sesión</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden"></div>
+
+<!-- APP -->
+<div id="app">
+  <div id="header">
+    <div id="header-left">
+      <h1>🛍️ Saldos Sugey</h1>
+      <p id="header-sub">Conectando...</p>
+    </div>
+    <div id="header-right">
+      <span id="role-badge" class="user-badge"></span>
+      <button class="logout-btn" onclick="signOut()">Salir</button>
+    </div>
+  </div>
+  <div id="content"></div>
+  <div id="nav"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase init ─────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:"AIzaSyAtPo1O8qf7mhfzya_1BIoTxb4gt_u_qIQ",
+  authDomain:"saldossugey.firebaseapp.com",
+  projectId:"saldossugey",
+  storageBucket:"saldossugey.firebasestorage.app",
+  messagingSenderId:"481653374465",
+  appId:"1:481653374465:web:68d5be7a04d8e663f58a00"
+});
+const db   = firebase.firestore();
+const auth = firebase.auth();
+
+// ── State ─────────────────────────────────────────────────────────────────
+let currentUser = null;
+let currentRol  = null; // 'admin' | 'empleado'
+let pedidos=[], ventas=[], apartados=[], usuarios=[];
+let cfg = {nombres:{"1":"Local 1","2":"Local 2"},emp:{"1":["Empleado 1-A","Empleado 1-B"],"2":["Empleado 2-A","Empleado 2-B"]}};
+let currentTab = "pedidos";
+let pendDelPed=null, pendDelVen=null, pendDelApt=null, openCliente=null;
+
+let pedFil={inicio:weekStart(todayStr()),fin:todayStr(),local:"todos",search:""};
+let venFil={fecha:todayStr()};
+let aptFil={inicio:weekStart(todayStr()),fin:todayStr(),local:"todos",status:"todos",search:""};
+let resFil={inicio:weekStart(todayStr()),fin:todayStr()};
+
+let pedForm={local:"1",emp:"",fecha:todayStr(),cliente:"",desc:"",precio:""};
+let abonoForm={}; // {aptId: amount}
+let openAbono=null; // which apt is showing abono input
+let editandoPedido=null; // {id, cliente, desc, precio, local, emp, fecha}
+let venForm={local:"1",emp:"",fecha:todayStr(),monto:"",nota:""};
+let aptForm={local:"1",emp:"",fecha:todayStr(),cliente:"",desc:"",total:"",anticipo:"",entregarFecha:""};
+let ajForm=null;
+
+let firestoreListeners=[];
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function todayStr(){return new Date().toISOString().split("T")[0]}
+function normalize(s){return(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim()}
+function weekStart(d){const dt=new Date(d+"T12:00:00"),day=dt.getDay(),diff=day===0?-6:1-day,m=new Date(dt);m.setDate(dt.getDate()+diff);return m.toISOString().split("T")[0]}
+function fmtDate(s){if(!s)return"";const[,m,d]=s.split("-");const dias=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];return`${dias[new Date(s+"T12:00:00").getDay()]} ${d}/${m}`}
+function fmtMoney(n){return"$"+Number(n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function badge(l){return`<span class="badge badge-${l}">${cfg.nombres[l]||"Local "+l}</span>`}
+let _tt;
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.remove("hidden");clearTimeout(_tt);_tt=setTimeout(()=>e.classList.add("hidden"),2500)}
+function show(id){document.getElementById(id).style.display="flex"}
+function hide(id){document.getElementById(id).style.display="none"}
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+async function loginGoogle(){
+  try{
+    document.getElementById("login-error").textContent="";
+    const provider=new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:"select_account"});
+    await auth.signInWithPopup(provider);
+  }catch(e){
+    if(e.code==="auth/popup-blocked"){
+      // fallback to redirect
+      const provider=new firebase.auth.GoogleAuthProvider();
+      auth.signInWithRedirect(provider);
+    } else {
+      document.getElementById("login-error").textContent="Error: "+e.message;
+    }
+  }
+}
+
+function signOut(){
+  firestoreListeners.forEach(u=>u());
+  firestoreListeners=[];
+  auth.signOut();
+}
+
+// Handle redirect result
+auth.getRedirectResult().then(result=>{
+  if(result && result.user) console.log("Redirect login OK");
+}).catch(e=>{
+  console.error("Redirect error:",e);
+});
+
+auth.onAuthStateChanged(async user=>{
+  try{
+    hide("loader"); hide("login-screen"); hide("waiting-screen");
+    document.getElementById("app").style.display="none";
+    if(!user){show("login-screen");return}
+    show("loader");
+    currentUser=user;
+    const userRef=db.collection("usuarios").doc(user.uid);
+    const snap=await userRef.get();
+    if(!snap.exists){
+      const allUsers=await db.collection("usuarios").get();
+      const rol=allUsers.empty?"admin":"sin-rol";
+      await userRef.set({email:user.email,nombre:user.displayName||user.email,foto:user.photoURL||"",rol,creado:Date.now()});
+      currentRol=rol;
+    } else {
+      currentRol=snap.data().rol;
+    }
+    hide("loader");
+    if(currentRol==="sin-rol"){show("waiting-screen");return}
+    document.getElementById("app").style.display="flex";
+    document.getElementById("role-badge").textContent=currentRol==="admin"?"👑 Admin":"👤 Empleado";
+    document.getElementById("role-badge").className="user-badge "+(currentRol==="admin"?"badge-admin":"badge-emp");
+    initFirestoreListeners();
+  }catch(err){
+    hide("loader");
+    show("login-screen");
+    document.getElementById("login-error").textContent="Error: "+err.message;
+    console.error("Auth error:",err);
+  }
+});
+
+// ── Firestore listeners ───────────────────────────────────────────────────
+function initFirestoreListeners(){
+  let loaded=0;
+  const total= currentRol==="admin"?5:4;
+  function onLoad(){loaded++;if(loaded>=total){updateHeader();buildNav();render()}}
+
+  firestoreListeners.push(
+    db.collection("pedidos").orderBy("fecha","desc").onSnapshot(s=>{pedidos=s.docs.map(d=>({id:d.id,...d.data()}));if(loaded<total)onLoad();else render()}),
+    db.collection("ventas").orderBy("fecha","desc").onSnapshot(s=>{ventas=s.docs.map(d=>({id:d.id,...d.data()}));if(loaded<total)onLoad();else render()}),
+    db.collection("apartados").orderBy("fecha","desc").onSnapshot(s=>{apartados=s.docs.map(d=>({id:d.id,...d.data()}));if(loaded<total)onLoad();else render()}),
+    db.collection("config").doc("main").onSnapshot(s=>{if(s.exists)cfg=s.data();if(loaded<total)onLoad();else{updateHeader();render()}})
+  );
+
+  if(currentRol==="admin"){
+    firestoreListeners.push(
+      db.collection("usuarios").onSnapshot(s=>{usuarios=s.docs.map(d=>({id:d.id,...d.data()}));if(loaded<total)onLoad();else render()})
+    );
+  } else {
+    onLoad(); // skip usuarios listener for empleados
+  }
+}
+
+function updateHeader(){
+  document.getElementById("header-sub").innerHTML=`<span class="online-dot"></span>${cfg.nombres["1"]} · ${cfg.nombres["2"]} · En línea`;
+}
+
+// ── Nav (dinámico según rol) ───────────────────────────────────────────────
+function buildNav(){
+  const tabs=currentRol==="admin"
+    ? [{id:"pedidos",icon:"📦",label:"Pedidos"},{id:"apartados",icon:"🏷️",label:"Apartados"},{id:"ventas",icon:"🏪",label:"Ventas"},{id:"resumen",icon:"📊",label:"Resumen"},{id:"ajustes",icon:"⚙️",label:"Ajustes"}]
+    : [{id:"pedidos",icon:"📦",label:"Pedidos"},{id:"apartados",icon:"🏷️",label:"Apartados"},{id:"ventas",icon:"🏪",label:"Ventas"}];
+  document.getElementById("nav").innerHTML=tabs.map(t=>`
+    <button class="nav-btn${t.id===currentTab?" active":""}" id="nav-${t.id}" onclick="switchTab('${t.id}')">
+      <span>${t.icon}</span><label>${t.label}</label>
+      <div class="nav-dot" ${t.id!==currentTab?'style="display:none"':''} id="dot-${t.id}"></div>
+    </button>`).join("");
+}
+
+function switchTab(t){
+  // Protect admin-only tabs
+  if((t==="resumen"||t==="ajustes")&&currentRol!=="admin"){toast("⛔ Solo el administrador puede ver esto");return}
+  currentTab=t;pendDelPed=null;pendDelVen=null;pendDelApt=null;
+  buildNav();render();
+}
+
+function render(){
+  const el=document.getElementById("content");
+  if(currentTab==="pedidos")        el.innerHTML=renderPedidos();
+  else if(currentTab==="apartados") el.innerHTML=renderApartados();
+  else if(currentTab==="ventas")    el.innerHTML=renderVentas();
+  else if(currentTab==="resumen"&&currentRol==="admin")  el.innerHTML=renderResumen();
+  else if(currentTab==="ajustes"&&currentRol==="admin")  el.innerHTML=renderAjustes();
+  attachHandlers();
+}
+
+// ── FILTER BOX ────────────────────────────────────────────────────────────
+function filterBox(idIni,idFin,fil,extra=""){
+  return`<div class="filter-box">
+    <div class="filter-title">🔍 Filtros de búsqueda</div>
+    <div class="row2" style="margin-bottom:8px">
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">DESDE</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="${idIni}" value="${fil.inicio}" class="date-input"/></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">HASTA</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="${idFin}" value="${fil.fin}" class="date-input"/></div>
+    </div>
+    ${extra}
+  </div>`;
+}
+
+// ── PEDIDOS ───────────────────────────────────────────────────────────────
+function renderPedidos(){
+  const list=pedidos.filter(p=>p.fecha>=pedFil.inicio&&p.fecha<=pedFil.fin)
+    .filter(p=>pedFil.local==="todos"||p.local===pedFil.local)
+    .filter(p=>!pedFil.search||normalize(p.cliente).includes(normalize(pedFil.search)));
+  const total=list.reduce((s,p)=>s+p.precio,0);
+  const empList=cfg.emp[pedForm.local]||[];
+
+  // Group by client for empleados
+  const cmap={};
+  list.forEach(p=>{
+    const k=normalize(p.cliente);
+    if(!cmap[k])cmap[k]={nombre:p.cliente,total:0,items:[],local:p.local};
+    cmap[k].total+=p.precio;
+    cmap[k].items.push(p);
+  });
+  const clientesOrden=Object.values(cmap).sort((a,b)=>a.nombre.localeCompare(b.nombre,"es"));
+
+  return`
+  <div class="card">
+    <div class="card-title">➕ Nuevo Pedido Facebook</div>
+    <div class="row2">
+      <div class="field"><label>Fecha</label><input type="date" onclick="try{this.showPicker()}catch(e){}" id="pf-fecha" value="${pedForm.fecha}"/></div>
+      <div class="field"><label>Local</label><select id="pf-local">
+        <option value="1" ${pedForm.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+        <option value="2" ${pedForm.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Empleado que anota</label><select id="pf-emp">
+      <option value="">— Selecciona —</option>
+      ${empList.map(e=>`<option value="${e}" ${pedForm.emp===e?"selected":""}>${e}</option>`).join("")}
+    </select></div>
+    <div class="field"><label>Cliente</label><input type="text" id="pf-cliente" placeholder="Ej: María García" value="${pedForm.cliente}"/></div>
+    <div class="field"><label>Producto</label><input type="text" id="pf-desc" placeholder="Ej: 3 playeras azul talla M" value="${pedForm.desc}"/></div>
+    <div class="field"><label>Precio $</label><input type="number" id="pf-precio" placeholder="0.00" value="${pedForm.precio}" inputmode="decimal"/></div>
+    <button class="btn btn-blue" onclick="guardarPedido()">Guardar Pedido</button>
+  </div>
+  ${filterBox("pf-ini","pf-fin",pedFil,`
+    <select id="pf-floc" class="select-input" style="margin-bottom:8px">
+      <option value="todos">Todos los locales</option>
+      <option value="1" ${pedFil.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+      <option value="2" ${pedFil.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+    </select>
+    <input type="text" id="pf-search" placeholder="🔍 Buscar cliente..." value="${pedFil.search}" class="search-input"/>`)}
+  <div class="card">
+    <div class="card-title">📋 Resultados (${list.length} pedidos · ${clientesOrden.length} clientes)</div>
+    ${list.length===0?'<p class="empty">Sin pedidos en este rango</p>':
+      currentRol==="admin"
+        ? list.map(p=>renderPedItem(p)).join("")+
+          (list.length>0?`<div class="totals-row"><span>Total (${list.length})</span><span style="color:var(--cyan)">${fmtMoney(total)}</span></div>`:"")
+        : clientesOrden.map(c=>renderPedClienteGroup(c)).join("")
+    }
+  </div>`;
+}
+
+function renderPedClienteGroup(c){
+  const isOpen=openCliente===("ped_"+normalize(c.nombre));
+  return`<div class="item" style="margin-bottom:6px">
+    <div onclick="openCliente=openCliente==='ped_${normalize(c.nombre)}'?null:'ped_${normalize(c.nombre)}';render()"
+      style="padding:10px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--text)">${c.nombre}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.items.length} producto${c.items.length>1?"s":""}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="font-family:Syne,sans-serif;font-weight:900;font-size:16px;color:var(--cyan)">${fmtMoney(c.total)}</span>
+        <span style="color:var(--muted);font-size:12px">${isOpen?"▲":"▼"}</span>
+      </div>
+    </div>
+    ${isOpen?`<div style="background:var(--bg);border-top:1px solid var(--border);padding:8px 12px;display:flex;flex-direction:column;gap:10px">
+      ${c.items.map(p=>`
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div style="padding:10px 12px">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">${badge(p.local)}<span style="color:var(--muted);font-size:11px">${fmtDate(p.fecha)} · ${p.emp||"—"}</span></div>
+            <div style="color:var(--text);font-size:13px;font-weight:600;margin-bottom:6px">${p.desc}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--cyan);font-weight:800;font-size:15px">${fmtMoney(p.precio)}</span>
+              <div style="display:flex;gap:8px">
+                <button type="button" ontouchstart="" onclick="editarPedido('${p.id}')"
+                  style="background:#1e3a5f;color:#60a5fa;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-width:42px;min-height:38px;-webkit-tap-highlight-color:transparent">✏️</button>
+                <button type="button" ontouchstart="" onclick="pendDelPed='${p.id}';render()"
+                  style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;min-width:42px;min-height:38px;-webkit-tap-highlight-color:transparent">✕</button>
+              </div>
+            </div>
+          </div>
+          ${pendDelPed===p.id?`<div style="background:#1c1208;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="color:var(--yellow);font-size:13px;font-weight:600">¿Eliminar este pedido?</span>
+            <div style="display:flex;gap:8px">
+              <button type="button" ontouchstart="" onclick="pendDelPed=null;render()" style="background:var(--dim);color:#94a3b8;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px">No</button>
+              <button type="button" ontouchstart="" onclick="eliminarPedido('${p.id}')" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px">Sí</button>
+            </div>
+          </div>`:""}
+          ${editandoPedido&&editandoPedido.id===p.id?`<div style="background:var(--bg);border-top:1px solid var(--border);padding:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Fecha</div>
+                <input type="date" onclick="try{this.showPicker()}catch(e){}" id="ed-fecha" value="${editandoPedido.fecha}"
+                  style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;font-family:DM Sans,sans-serif"/></div>
+              <div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Local</div>
+                <select id="ed-local" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;appearance:none;font-family:DM Sans,sans-serif">
+                  <option value="1" ${editandoPedido.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+                  <option value="2" ${editandoPedido.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+                </select></div>
+            </div>
+            <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Empleado</div>
+              <select id="ed-emp" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;appearance:none;font-family:DM Sans,sans-serif">
+                <option value="">— Selecciona —</option>
+                ${(cfg.emp[editandoPedido.local]||[]).map(e=>`<option value="${e}" ${editandoPedido.emp===e?"selected":""}>${e}</option>`).join("")}
+              </select></div>
+            <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Cliente</div>
+              <input type="text" id="ed-cliente" value="${editandoPedido.cliente}"
+                style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+            <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Producto</div>
+              <input type="text" id="ed-desc" value="${editandoPedido.desc}"
+                style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+            <div style="margin-bottom:12px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase">Precio $</div>
+              <input type="number" id="ed-precio" value="${editandoPedido.precio}" inputmode="decimal"
+                style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <button type="button" ontouchstart="" onclick="editandoPedido=null;render()"
+                style="background:var(--dim);color:var(--text);font-weight:700;font-size:13px;padding:11px;border-radius:10px;border:none;cursor:pointer;min-height:42px">Cancelar</button>
+              <button type="button" ontouchstart="" onclick="guardarEdicion()"
+                style="background:var(--blue);color:#fff;font-weight:700;font-size:13px;padding:11px;border-radius:10px;border:none;cursor:pointer;min-height:42px">💾 Guardar</button>
+            </div>
+          </div>`:""}
+        </div>`).join("")}
+      <div style="display:flex;justify-content:space-between;padding-top:4px">
+        <span style="color:var(--muted);font-size:12px;font-weight:700">TOTAL ${c.nombre.toUpperCase()}:</span>
+        <span style="color:var(--cyan);font-size:14px;font-weight:900">${fmtMoney(c.total)}</span>
+      </div>
+    </div>`:""}
+  </div>`;
+}
+
+function renderPedItem(p){
+  if(pendDelPed===p.id)return`<div class="item"><div class="confirm-row"><span>¿Eliminar pedido de ${p.cliente}?</span><div class="confirm-btns"><button class="btn-no" onclick="pendDelPed=null;render()">No</button><button class="btn-yes" onclick="eliminarPedido('${p.id}')">Sí</button></div></div></div>`;
+  const isEditing=editandoPedido&&editandoPedido.id===p.id;
+  const empList=cfg.emp[isEditing?editandoPedido.local:p.local]||[];
+  return`<div class="item">
+    <div class="item-row">
+      <div class="item-info">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="item-name">${p.cliente}</span>${badge(p.local)}</div>
+        <div class="item-sub">${p.desc}</div>
+        <div class="item-meta">${fmtDate(p.fecha)} · ${p.emp||"—"}</div>
+      </div>
+      <div class="item-right">
+        <span class="price-cyan">${fmtMoney(p.precio)}</span>
+        <button onclick="editandoPedido=editandoPedido&&editandoPedido.id==='${p.id}'?null:{id:'${p.id}',cliente:'${p.cliente.replace(/'/g,"\'")}',desc:'${p.desc.replace(/'/g,"\'")}',precio:${p.precio},local:'${p.local}',emp:'${p.emp||""}',fecha:'${p.fecha}'};render()"
+          style="background:${isEditing?"#1e40af":"#1e3a5f"};color:#60a5fa;border:none;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;min-height:34px;touch-action:manipulation">✏️</button>
+        <button class="del-btn" onclick="pendDelPed='${p.id}';render()">✕</button>
+      </div>
+    </div>
+    ${isEditing?`<div style="background:var(--bg);border-top:1px solid var(--border);padding:12px">
+      <div class="row2" style="margin-bottom:8px">
+        <div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Fecha</div>
+          <input type="date" onclick="try{this.showPicker()}catch(e){}" id="ed-fecha" value="${editandoPedido.fecha}" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;font-family:DM Sans,sans-serif"/></div>
+        <div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Local</div>
+          <select id="ed-local" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;appearance:none;font-family:DM Sans,sans-serif">
+            <option value="1" ${editandoPedido.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+            <option value="2" ${editandoPedido.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+          </select></div>
+      </div>
+      <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Empleado</div>
+        <select id="ed-emp" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;appearance:none;font-family:DM Sans,sans-serif">
+          <option value="">— Selecciona —</option>
+          ${empList.map(e=>`<option value="${e}" ${editandoPedido.emp===e?"selected":""}>${e}</option>`).join("")}
+        </select></div>
+      <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Cliente</div>
+        <input type="text" id="ed-cliente" value="${editandoPedido.cliente}" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+      <div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Producto</div>
+        <input type="text" id="ed-desc" value="${editandoPedido.desc}" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+      <div style="margin-bottom:12px"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase">Precio $</div>
+        <input type="number" id="ed-precio" value="${editandoPedido.precio}" inputmode="decimal" style="width:100%;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button onclick="editandoPedido=null;render()" style="background:var(--dim);color:var(--text);font-weight:700;font-size:13px;padding:10px;border-radius:10px;border:none;cursor:pointer">Cancelar</button>
+        <button onclick="guardarEdicion()" style="background:var(--blue);color:#fff;font-weight:700;font-size:13px;padding:10px;border-radius:10px;border:none;cursor:pointer">💾 Guardar</button>
+      </div>
+    </div>`:""}
+  </div>`;
+}
+
+function editarPedido(id){
+  const p=pedidos.find(x=>x.id===id);
+  if(!p)return;
+  editandoPedido={...p};
+  render();
+  setTimeout(()=>{
+    const el=document.getElementById("edit-modal");
+    if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
+  },100);
+}
+
+async function guardarEdicion(){
+  if(!editandoPedido)return;
+  // Try both id prefixes (ed- for empleados view, edit- for admin view)
+  const getVal = (id1,id2) => {
+    const el = document.getElementById(id1)||document.getElementById(id2);
+    return el ? el.value : "";
+  };
+  const cliente = getVal("ed-cliente","edit-cliente").trim();
+  const desc    = getVal("ed-desc","edit-desc").trim();
+  const precio  = parseFloat(getVal("ed-precio","edit-precio"));
+  const fecha   = getVal("ed-fecha","edit-fecha");
+  const local   = getVal("ed-local","edit-local");
+  const emp     = getVal("ed-emp","edit-emp");
+  if(!cliente||!desc||!precio){toast("⚠️ Completa todos los campos");return}
+  try{
+    await db.collection("pedidos").doc(editandoPedido.id).update({cliente,desc,precio,fecha,local,emp});
+    editandoPedido=null;
+    toast("✅ Pedido actualizado");
+  }catch(e){
+    toast("❌ Error: "+e.message);
+    console.error(e);
+  }
+}
+
+async function guardarPedido(){
+  const cliente=document.getElementById("pf-cliente").value.trim();
+  const desc=document.getElementById("pf-desc").value.trim();
+  const precio=parseFloat(document.getElementById("pf-precio").value);
+  const fecha=document.getElementById("pf-fecha").value;
+  const local=document.getElementById("pf-local").value;
+  const emp=document.getElementById("pf-emp").value;
+  if(!cliente||!desc||!precio){toast("⚠️ Completa cliente, producto y precio");return}
+  pedForm={local,emp,fecha,cliente:"",desc:"",precio:""};
+  await db.collection("pedidos").add({fecha,local,emp,cliente,desc,precio,ts:Date.now(),by:currentUser.email});
+  toast("✅ Pedido guardado");
+}
+async function eliminarPedido(id){await db.collection("pedidos").doc(id).delete();pendDelPed=null;toast("🗑️ Eliminado")}
+
+// ── APARTADOS ─────────────────────────────────────────────────────────────
+function renderApartados(){
+  const list=apartados
+    .filter(a=>a.fecha>=aptFil.inicio&&a.fecha<=aptFil.fin)
+    .filter(a=>aptFil.local==="todos"||a.local===aptFil.local)
+    .filter(a=>aptFil.status==="todos"||a.status===aptFil.status)
+    .filter(a=>!aptFil.search||normalize(a.cliente).includes(normalize(aptFil.search)));
+  const empList=cfg.emp[aptForm.local]||[];
+  const pendientes=list.filter(a=>a.status!=="entregado");
+  const totalPend=pendientes.reduce((s,a)=>{const abs=(a.abonos||[]).reduce((x,b)=>x+(b.monto||0),0);return s+(a.total-(a.anticipo||0)-abs);},0);
+  return`
+  <div class="card">
+    <div class="card-title">🏷️ Nuevo Apartado</div>
+    <div class="row2">
+      <div class="field"><label>Fecha</label><input type="date" onclick="try{this.showPicker()}catch(e){}" id="af-fecha" value="${aptForm.fecha}"/></div>
+      <div class="field"><label>Local</label><select id="af-local">
+        <option value="1" ${aptForm.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+        <option value="2" ${aptForm.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Empleado que anota</label><select id="af-emp">
+      <option value="">— Selecciona —</option>
+      ${empList.map(e=>`<option value="${e}" ${aptForm.emp===e?"selected":""}>${e}</option>`).join("")}
+    </select></div>
+    <div class="field"><label>Cliente</label><input type="text" id="af-cliente" placeholder="Ej: María García" value="${aptForm.cliente}"/></div>
+    <div class="field"><label>Producto</label><input type="text" id="af-desc" placeholder="Ej: Vestido rojo talla S" value="${aptForm.desc}"/></div>
+    <div class="row2">
+      <div class="field"><label>Total $</label><input type="number" id="af-total" placeholder="0.00" value="${aptForm.total}" inputmode="decimal"/></div>
+      <div class="field"><label>Anticipo $</label><input type="number" id="af-anticipo" placeholder="0.00" value="${aptForm.anticipo}" inputmode="decimal"/></div>
+    </div>
+    <div class="field"><label>Fecha entrega (opcional)</label><input type="date" onclick="try{this.showPicker()}catch(e){}" id="af-entregar" value="${aptForm.entregarFecha}"/></div>
+    <button class="btn btn-purple" onclick="guardarApartado()">Guardar Apartado</button>
+  </div>
+  <div class="filter-box">
+    <div class="filter-title">🔍 Filtros de búsqueda</div>
+    <div class="row2" style="margin-bottom:8px">
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">DESDE</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="af-ini" value="${aptFil.inicio}" class="date-input"/></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">HASTA</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="af-fin" value="${aptFil.fin}" class="date-input"/></div>
+    </div>
+    <div class="row2" style="margin-bottom:8px">
+      <select id="af-floc" class="select-input"><option value="todos">Todos</option><option value="1" ${aptFil.local==="1"?"selected":""}>${cfg.nombres["1"]}</option><option value="2" ${aptFil.local==="2"?"selected":""}>${cfg.nombres["2"]}</option></select>
+      <select id="af-fstatus" class="select-input"><option value="todos">Todos</option><option value="pendiente" ${aptFil.status==="pendiente"?"selected":""}>Pendientes</option><option value="entregado" ${aptFil.status==="entregado"?"selected":""}>Entregados</option></select>
+    </div>
+    <input type="text" id="af-search" placeholder="🔍 Buscar cliente..." value="${aptFil.search}" class="search-input"/>
+  </div>
+  ${pendientes.length>0?`<div style="background:linear-gradient(135deg,#4c1d95,#2e1065);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:#d8b4fe;font-size:10px;font-weight:700;text-transform:uppercase">Por cobrar (${pendientes.length})</div><div style="color:#fff;font-family:Syne,sans-serif;font-weight:800;font-size:20px;margin-top:2px">${fmtMoney(totalPend)}</div></div><span style="font-size:28px">🏷️</span></div>`:""}
+  <div class="card"><div class="card-title">📋 Apartados (${list.length})</div>
+    ${list.length===0?'<p class="empty">Sin apartados en este rango</p>':list.map(a=>renderAptItem(a)).join("")}
+  </div>`;
+}
+
+function renderAptItem(a){
+  const abonos=a.abonos||[];
+  const totalAbonado=(a.anticipo||0)+abonos.reduce((s,x)=>s+(x.monto||0),0);
+  const restante=a.total-totalAbonado;
+  const isEnt=a.status==="entregado";
+  const isOpenAb=openAbono===a.id;
+  if(pendDelApt===a.id)return`<div class="item"><div class="confirm-row"><span>¿Eliminar apartado de ${a.cliente}?</span><div class="confirm-btns"><button class="btn-no" onclick="pendDelApt=null;render()">No</button><button class="btn-yes" onclick="eliminarApartado('${a.id}')">Sí</button></div></div></div>`;
+  return`<div class="item" style="${isEnt?"opacity:.6":""}">
+    <div class="item-row">
+      <div class="item-info">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="item-name">${a.cliente}</span>${badge(a.local)}<span class="${isEnt?"status-entregado":"status-pendiente"}">${isEnt?"✓ Entregado":"Pendiente"}</span></div>
+        <div class="item-sub">${a.desc}</div>
+        <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted)">Total: <strong style="color:var(--text)">${fmtMoney(a.total)}</strong></span>
+          <span style="font-size:11px;color:var(--muted)">Pagado: <strong style="color:var(--green)">${fmtMoney(totalAbonado)}</strong></span>
+          ${!isEnt?`<span style="font-size:11px;color:var(--muted)">Resta: <strong style="color:#fb923c">${fmtMoney(restante)}</strong></span>`:""}
+        </div>
+        ${abonos.length>0?`<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">
+          ${abonos.map((x,i)=>`<span style="background:#1e293b;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:10px;color:#94a3b8">+${fmtMoney(x.monto)} ${x.fecha?fmtDate(x.fecha):""}</span>`).join("")}
+        </div>`:""}
+        <div class="item-meta">${fmtDate(a.fecha)} · ${a.emp||"—"}${a.entregarFecha?" · 📅 "+fmtDate(a.entregarFecha):""}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+        ${!isEnt?`<button class="ok-btn" onclick="marcarEntregado('${a.id}')">✓ Listo</button>`:""}
+        ${!isEnt?`<button onclick="openAbono=openAbono==='${a.id}'?null:'${a.id}';render()" style="background:#1e3a5f;color:#60a5fa;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px">💰 Abonar</button>`:""}
+        <button class="del-btn" onclick="pendDelApt='${a.id}';render()">✕</button>
+      </div>
+    </div>
+    ${isOpenAb?`<div style="background:#0f172a;border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:8px;align-items:center">
+      <input type="number" id="abono-monto-${a.id}" placeholder="Monto $" inputmode="decimal"
+        style="flex:1;background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;font-family:DM Sans,sans-serif"/>
+      <input type="date" onclick="try{this.showPicker()}catch(e){}" id="abono-fecha-${a.id}" value="${todayStr()}"
+        style="background:var(--surface);border:1px solid var(--dim);border-radius:9px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;font-family:DM Sans,sans-serif;width:130px"/>
+      <button onclick="agregarAbono('${a.id}')" style="background:#16a34a;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✓ Guardar</button>
+    </div>`:""}
+  </div>`;
+}
+
+async function guardarApartado(){
+  const cliente=document.getElementById("af-cliente").value.trim();
+  const desc=document.getElementById("af-desc").value.trim();
+  const total=parseFloat(document.getElementById("af-total").value)||0;
+  const anticipo=parseFloat(document.getElementById("af-anticipo").value)||0;
+  const fecha=document.getElementById("af-fecha").value;
+  const local=document.getElementById("af-local").value;
+  const emp=document.getElementById("af-emp").value;
+  const entregarFecha=document.getElementById("af-entregar").value||"";
+  if(!cliente||!desc||!total){toast("⚠️ Completa cliente, producto y total");return}
+  aptForm={local,emp,fecha,cliente:"",desc:"",total:"",anticipo:"",entregarFecha:""};
+  await db.collection("apartados").add({fecha,local,emp,cliente,desc,total,anticipo,entregarFecha,status:"pendiente",ts:Date.now(),by:currentUser.email});
+  toast("✅ Apartado guardado");
+}
+async function eliminarApartado(id){await db.collection("apartados").doc(id).delete();pendDelApt=null;toast("🗑️ Eliminado")}
+async function marcarEntregado(id){await db.collection("apartados").doc(id).update({status:"entregado"});toast("✅ Entregado")}
+
+async function agregarAbono(id){
+  const montoEl=document.getElementById("abono-monto-"+id);
+  const fechaEl=document.getElementById("abono-fecha-"+id);
+  const monto=parseFloat(montoEl?montoEl.value:0);
+  const fecha=fechaEl?fechaEl.value:todayStr();
+  if(!monto||monto<=0){toast("⚠️ Ingresa un monto válido");return}
+  const snap=await db.collection("apartados").doc(id).get();
+  const abonos=snap.data().abonos||[];
+  abonos.push({monto,fecha,ts:Date.now(),by:currentUser.email});
+  await db.collection("apartados").doc(id).update({abonos});
+  openAbono=null;
+  toast("✅ Abono registrado");
+}
+
+// ── VENTAS ────────────────────────────────────────────────────────────────
+function renderVentas(){
+  const empList=cfg.emp[venForm.local]||[];
+  const delDia=ventas.filter(v=>v.fecha===venFil.fecha);
+  const tL1=delDia.filter(v=>v.local==="1").reduce((s,v)=>s+v.monto,0);
+  const tL2=delDia.filter(v=>v.local==="2").reduce((s,v)=>s+v.monto,0);
+  return`
+  <div class="card">
+    <div class="card-title">➕ Registrar Venta</div>
+    <div class="row2">
+      <div class="field"><label>Fecha</label><input type="date" onclick="try{this.showPicker()}catch(e){}" id="vf-fecha" value="${venForm.fecha}"/></div>
+      <div class="field"><label>Local</label><select id="vf-local">
+        <option value="1" ${venForm.local==="1"?"selected":""}>${cfg.nombres["1"]}</option>
+        <option value="2" ${venForm.local==="2"?"selected":""}>${cfg.nombres["2"]}</option>
+      </select></div>
+    </div>
+    <div class="field"><label>Empleado</label><select id="vf-emp">
+      <option value="">— Selecciona —</option>
+      ${empList.map(e=>`<option value="${e}" ${venForm.emp===e?"selected":""}>${e}</option>`).join("")}
+    </select></div>
+    <div class="field"><label>Monto $</label><input type="number" id="vf-monto" placeholder="0.00" value="${venForm.monto}" inputmode="decimal"/></div>
+    <div class="field"><label>Nota (opcional)</label><input type="text" id="vf-nota" placeholder="Ej: ropa, zapatos..." value="${venForm.nota}"/></div>
+    <button class="btn btn-green" onclick="guardarVenta()">Registrar Venta</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-family:Syne,sans-serif;font-weight:800;font-size:14px">📅 Ventas del Día</span>
+      <input type="date" onclick="try{this.showPicker()}catch(e){}" id="vf-filter-fecha" value="${venFil.fecha}" class="date-input" style="width:130px"/>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card" style="background:linear-gradient(135deg,#1d4ed8,#1e40af)"><div class="s-label" style="color:#93c5fd">${cfg.nombres["1"]}</div><div class="s-val">${fmtMoney(tL1)}</div></div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#15803d,#166534)"><div class="s-label" style="color:#86efac">${cfg.nombres["2"]}</div><div class="s-val">${fmtMoney(tL2)}</div></div>
+    </div>
+    ${delDia.length===0?'<p class="empty">Sin registros este día</p>':[...delDia].sort((a,b)=>b.ts-a.ts).map(v=>renderVenItem(v)).join("")}
+    ${delDia.length>0?`<div class="totals-row"><span>Total del día</span><span style="color:var(--green)">${fmtMoney(tL1+tL2)}</span></div>`:""}
+  </div>`;
+}
+
+function renderVenItem(v){
+  if(pendDelVen===v.id)return`<div class="item"><div class="confirm-row"><span>¿Eliminar este registro?</span><div class="confirm-btns"><button class="btn-no" onclick="pendDelVen=null;render()">No</button><button class="btn-yes" onclick="eliminarVenta('${v.id}')">Sí</button></div></div></div>`;
+  return`<div class="item"><div class="item-row"><div class="item-info"><div style="display:flex;align-items:center;gap:6px">${badge(v.local)}<span style="color:var(--muted);font-size:12px">${v.emp||"—"}</span></div>${v.nota?`<div class="item-sub">${v.nota}</div>`:""}</div><div class="item-right"><span class="price-green">${fmtMoney(v.monto)}</span><button class="del-btn" onclick="pendDelVen='${v.id}';render()">✕</button></div></div></div>`;
+}
+
+async function guardarVenta(){
+  const monto=parseFloat(document.getElementById("vf-monto").value);
+  const fecha=document.getElementById("vf-fecha").value;
+  const local=document.getElementById("vf-local").value;
+  const emp=document.getElementById("vf-emp").value;
+  const nota=document.getElementById("vf-nota").value.trim();
+  if(!monto){toast("⚠️ Ingresa el monto");return}
+  venForm={local,emp,fecha,monto:"",nota:""};
+  await db.collection("ventas").add({fecha,local,emp,monto,nota,ts:Date.now(),by:currentUser.email});
+  toast("✅ Venta registrada");
+}
+async function eliminarVenta(id){await db.collection("ventas").doc(id).delete();pendDelVen=null;toast("🗑️ Eliminado")}
+
+// ── RESUMEN (solo admin) ──────────────────────────────────────────────────
+function renderResumen(){
+  const pedSem=pedidos.filter(p=>p.fecha>=resFil.inicio&&p.fecha<=resFil.fin);
+  const venSem=ventas.filter(v=>v.fecha>=resFil.inicio&&v.fecha<=resFil.fin);
+  const aptSem=apartados.filter(a=>a.fecha>=resFil.inicio&&a.fecha<=resFil.fin&&a.status!=="entregado");
+  const tPL1=pedSem.filter(p=>p.local==="1").reduce((s,p)=>s+p.precio,0);
+  const tPL2=pedSem.filter(p=>p.local==="2").reduce((s,p)=>s+p.precio,0);
+  const tVL1=venSem.filter(v=>v.local==="1").reduce((s,v)=>s+v.monto,0);
+  const tVL2=venSem.filter(v=>v.local==="2").reduce((s,v)=>s+v.monto,0);
+  const tApt=aptSem.reduce((s,a)=>s+(a.total-a.anticipo),0);
+  const cmap={};
+  pedSem.forEach(p=>{const k=p.cliente.toLowerCase().trim();if(!cmap[k])cmap[k]={nombre:p.cliente,l1:0,l2:0,items:[]};cmap[k][p.local==="1"?"l1":"l2"]+=p.precio;cmap[k].items.push(p)});
+  const clientes=Object.values(cmap).sort((a,b)=>(b.l1+b.l2)-(a.l1+a.l2));
+  const byDay={};
+  venSem.forEach(v=>{if(!byDay[v.fecha])byDay[v.fecha]={l1:0,l2:0};byDay[v.fecha][v.local==="1"?"l1":"l2"]+=v.monto});
+  return`
+  <div class="filter-box">
+    <div class="filter-title">📅 Rango de fechas</div>
+    <div class="row2">
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">DESDE</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="res-ini" value="${resFil.inicio}" class="date-input"/></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700">HASTA</div><input type="date" onclick="try{this.showPicker()}catch(e){}" id="res-fin" value="${resFil.fin}" class="date-input"/></div>
+    </div>
+  </div>
+  <div class="grand-total"><div class="g-label">Total período · ventas + pedidos FB</div><div class="g-val">${fmtMoney(tPL1+tPL2+tVL1+tVL2)}</div></div>
+  ${tApt>0?`<div style="background:linear-gradient(135deg,#4c1d95,#2e1065);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:#d8b4fe;font-size:10px;font-weight:700;text-transform:uppercase">Apartados por cobrar</div><div style="color:#fff;font-family:Syne,sans-serif;font-weight:800;font-size:20px;margin-top:2px">${fmtMoney(tApt)}</div></div><span style="font-size:28px">🏷️</span></div>`:""}
+  <div class="stat-grid">
+    ${["1","2"].map(l=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">${badge(l)}<div class="section-label" style="margin-top:8px">Ventas local</div><div style="font-family:Syne,sans-serif;font-weight:800;font-size:17px;color:var(--green)">${fmtMoney(l==="1"?tVL1:tVL2)}</div><div class="section-label" style="margin-top:6px">Pedidos FB</div><div style="font-family:Syne,sans-serif;font-weight:800;font-size:17px;color:var(--cyan)">${fmtMoney(l==="1"?tPL1:tPL2)}</div></div>`).join("")}
+  </div>
+  <div class="card"><div class="card-title">👥 Pedidos FB por Cliente</div>
+    ${clientes.length===0?'<p class="empty">Sin pedidos</p>':clientes.map(c=>{
+      const total=c.l1+c.l2,isOpen=openCliente===c.nombre;
+      return`<div class="item" style="margin-bottom:6px">
+        <button class="cli-header" onclick="openCliente='${isOpen?"":c.nombre}';render()">
+          <div style="text-align:left"><div style="font-weight:700;font-size:14px;color:var(--text)">${c.nombre}</div>
+          <div style="display:flex;gap:8px;margin-top:2px;flex-wrap:wrap">${c.l1>0?`<span style="font-size:11px;color:#60a5fa">${cfg.nombres["1"]}: ${fmtMoney(c.l1)}</span>`:""}${c.l2>0?`<span style="font-size:11px;color:var(--green)">${cfg.nombres["2"]}: ${fmtMoney(c.l2)}</span>`:""}</div></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px"><span style="font-family:Syne,sans-serif;font-weight:900;font-size:16px;color:var(--cyan)">${fmtMoney(total)}</span><span style="color:var(--muted);font-size:12px">${isOpen?"▲":"▼"}</span></div>
+        </button>
+        ${isOpen?`<div class="cli-body">${c.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:6px;flex:1">${badge(i.local)}<span style="color:var(--muted);font-size:12px">${i.desc}</span></div><span style="color:var(--text);font-weight:700;font-size:13px;flex-shrink:0;margin-left:8px">${fmtMoney(i.precio)}</span></div>`).join("")}<div class="cli-total"><span style="color:var(--muted);font-size:12px;font-weight:700">TOTAL:</span><span style="color:var(--cyan);font-size:14px;font-weight:900">${fmtMoney(total)}</span></div></div>`:""}
+      </div>`;}).join("")}
+    ${clientes.length>0?`<div class="totals-row"><span>Total FB (${pedSem.length})</span><span style="color:var(--cyan)">${fmtMoney(tPL1+tPL2)}</span></div>`:""}
+  </div>
+  <div class="card"><div class="card-title">📅 Ventas por Día</div>
+    ${Object.keys(byDay).length===0?'<p class="empty">Sin ventas</p>':Object.entries(byDay).sort(([a],[b])=>a.localeCompare(b)).map(([f,t])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span style="color:#cbd5e1;font-weight:600;font-size:13px">${fmtDate(f)}</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <span style="font-size:12px;color:#60a5fa">${cfg.nombres["1"]}: ${fmtMoney(t.l1)}</span>
+          <span style="font-size:12px;color:var(--green)">${cfg.nombres["2"]}: ${fmtMoney(t.l2)}</span>
+        </div>
+      </div>`).join("")}
+    ${Object.keys(byDay).length>0?`<div class="totals-row"><span>Total ventas</span><span style="color:var(--green)">${fmtMoney(tVL1+tVL2)}</span></div>`:""}
+  </div>`;
+}
+
+// ── AJUSTES (solo admin) ──────────────────────────────────────────────────
+function renderAjustes(){
+  if(!ajForm)ajForm=JSON.parse(JSON.stringify(cfg));
+  const sinRol=usuarios.filter(u=>u.rol==="sin-rol");
+  return`
+  ${sinRol.length>0?`<div style="background:#422006;border:1px solid #92400e;border-radius:12px;padding:12px 14px;margin-bottom:12px">
+    <div style="color:#fbbf24;font-size:13px;font-weight:700;margin-bottom:8px">⏳ ${sinRol.length} usuario(s) esperando aprobación</div>
+    ${sinRol.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #92400e">
+      <div><div style="color:var(--text);font-size:13px;font-weight:600">${u.nombre}</div><div style="color:var(--muted);font-size:11px">${u.email}</div></div>
+      <div style="display:flex;gap:6px">
+        <button onclick="cambiarRol('${u.id}','empleado')" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Empleado</button>
+        <button onclick="cambiarRol('${u.id}','admin')" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Admin</button>
+      </div>
+    </div>`).join("")}
+  </div>`:""}
+
+  <div class="card"><div class="card-title">👥 Usuarios registrados</div>
+    ${usuarios.filter(u=>u.rol!=="sin-rol").map(u=>`
+      <div class="user-row">
+        <div><div style="font-size:13px;font-weight:700;color:var(--text)">${u.nombre}</div><div style="font-size:11px;color:var(--muted)">${u.email}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="user-badge ${u.rol==="admin"?"badge-admin":"badge-emp"}">${u.rol==="admin"?"👑 Admin":"👤 Empleado"}</span>
+          ${u.id!==currentUser.uid?`<select onchange="cambiarRol('${u.id}',this.value)" style="background:var(--bg);border:1px solid var(--dim);border-radius:8px;padding:4px 8px;color:var(--text);font-size:11px;outline:none">
+            <option value="empleado" ${u.rol==="empleado"?"selected":""}>Empleado</option>
+            <option value="admin" ${u.rol==="admin"?"selected":""}>Admin</option>
+            <option value="sin-rol">Sin acceso</option>
+          </select>`:'<span style="font-size:11px;color:var(--muted)">(tú)</span>'}
+        </div>
+      </div>`).join("")}
+  </div>
+
+  ${[1,2].map(l=>`<div class="card"><div class="card-title">🏪 Local ${l}</div>
+    <div class="field"><label>Nombre del local</label><input type="text" id="aj-nombre-${l}" value="${ajForm.nombres[String(l)]||""}" placeholder="Local ${l}"/></div>
+    <div class="field"><label>Empleado 1</label><input type="text" id="aj-emp-${l}-0" value="${(ajForm.emp[String(l)]||[])[0]||""}" placeholder="Nombre"/></div>
+    <div class="field"><label>Empleado 2</label><input type="text" id="aj-emp-${l}-1" value="${(ajForm.emp[String(l)]||[])[1]||""}" placeholder="Nombre"/></div>
+  </div>`).join("")}
+  <button class="btn btn-gray" onclick="guardarConfig()" style="margin-bottom:12px">💾 Guardar Configuración</button>
+  <div class="card"><div class="card-title">📊 Estadísticas</div>
+    <p style="color:var(--muted);font-size:12px">Pedidos FB: <strong style="color:#94a3b8">${pedidos.length}</strong></p>
+    <p style="color:var(--muted);font-size:12px;margin-top:3px">Apartados: <strong style="color:#94a3b8">${apartados.length}</strong></p>
+    <p style="color:var(--muted);font-size:12px;margin-top:3px">Ventas: <strong style="color:#94a3b8">${ventas.length}</strong></p>
+    <p style="color:var(--muted);font-size:12px;margin-top:6px"><span class="online-dot"></span>Firebase conectado</p>
+  </div>`;
+}
+
+async function cambiarRol(uid,nuevoRol){
+  await db.collection("usuarios").doc(uid).update({rol:nuevoRol});
+  toast("✅ Rol actualizado");
+}
+
+async function guardarConfig(){
+  const n={nombres:{"1":document.getElementById("aj-nombre-1").value||"Local 1","2":document.getElementById("aj-nombre-2").value||"Local 2"},emp:{"1":[document.getElementById("aj-emp-1-0").value||"Emp 1-A",document.getElementById("aj-emp-1-1").value||"Emp 1-B"],"2":[document.getElementById("aj-emp-2-0").value||"Emp 2-A",document.getElementById("aj-emp-2-1").value||"Emp 2-B"]}};
+  await db.collection("config").doc("main").set(n);ajForm=null;toast("✅ Guardado");
+}
+
+// ── Event handlers ────────────────────────────────────────────────────────
+function attachHandlers(){
+  const b=(id,fn)=>{const el=document.getElementById(id);if(el)fn(el)};
+  b("pf-local",el=>el.onchange=e=>{pedForm.local=e.target.value;render()});
+  b("pf-fecha",el=>el.onchange=e=>pedForm.fecha=e.target.value);
+  b("pf-ini",el=>el.onchange=e=>{pedFil.inicio=e.target.value;render()});
+  b("pf-fin",el=>el.onchange=e=>{pedFil.fin=e.target.value;render()});
+  b("pf-floc",el=>el.onchange=e=>{pedFil.local=e.target.value;render()});
+  b("pf-search",el=>{
+    el.oninput=e=>{
+      pedFil.search=e.target.value;
+      clearTimeout(el._t);
+      el._t=setTimeout(()=>{const v=document.getElementById("pf-search");const pos=v?v.selectionStart:-1;render();const nv=document.getElementById("pf-search");if(nv&&pos>=0){nv.focus();try{nv.setSelectionRange(pos,pos);}catch(e){}}},400);
+    };
+  });
+  b("af-local",el=>el.onchange=e=>{aptForm.local=e.target.value;render()});
+  b("af-ini",el=>el.onchange=e=>{aptFil.inicio=e.target.value;render()});
+  b("af-fin",el=>el.onchange=e=>{aptFil.fin=e.target.value;render()});
+  b("af-floc",el=>el.onchange=e=>{aptFil.local=e.target.value;render()});
+  b("af-fstatus",el=>el.onchange=e=>{aptFil.status=e.target.value;render()});
+  b("af-search",el=>{
+    el.oninput=e=>{
+      aptFil.search=e.target.value;
+      clearTimeout(el._t);
+      el._t=setTimeout(()=>{const v=document.getElementById("af-search");const pos=v?v.selectionStart:-1;render();const nv=document.getElementById("af-search");if(nv&&pos>=0){nv.focus();try{nv.setSelectionRange(pos,pos);}catch(e){}}},400);
+    };
+  });
+  b("vf-local",el=>el.onchange=e=>{venForm.local=e.target.value;render()});
+  b("vf-filter-fecha",el=>el.onchange=e=>{venFil.fecha=e.target.value;render()});
+  b("res-ini",el=>el.onchange=e=>{resFil.inicio=e.target.value;render()});
+  b("res-fin",el=>el.onchange=e=>{resFil.fin=e.target.value;render()});
+}
+</script>
+</body>
+</html>
